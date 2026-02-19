@@ -71,16 +71,6 @@ def transcribe():
                 logger.info(f"Fichier temporaire supprimé : {tmp_filepath}")
             except OSError as e:
                 logger.warning(f"Impossible de supprimer le fichier temporaire {tmp_filepath}: {e}")
-            
-            # Nettoyage éventuel du fichier converti par whisper_utils (ex: .mp3)
-            # whisper_utils peut générer un fichier avec l'extension .mp3 en plus
-            mp3_path = tmp_filepath + ".mp3"
-            if os.path.exists(mp3_path):
-                try:
-                    os.remove(mp3_path)
-                    logger.info(f"Fichier converti supprimé : {mp3_path}")
-                except OSError:
-                    pass
 
 # ✅ Ajout de la route /health
 @transcribe_bp.route('/health', methods=['GET'])
