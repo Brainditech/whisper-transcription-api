@@ -1,5 +1,5 @@
 Flask
-openai-whisper
+faster-whisper
 torch
 requests
 markdown2
@@ -7,4 +7,4 @@ google-api-python-client
 google-auth
 google-auth-oauthlib
 mistune
-gunicorn
+waitress

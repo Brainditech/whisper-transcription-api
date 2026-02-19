@@ -3,11 +3,15 @@ import tempfile, os
 from utils.whisper_utils import transcribe_audio_file
 import requests
 import logging
+import threading
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 transcribe_bp = Blueprint('transcribe', __name__)
+
+# Verrou global pour éviter plusieurs transcriptions simultanées sur GPU
+transcription_lock = threading.Lock()
 
 @transcribe_bp.route('/transcribe', methods=['POST'])
 def transcribe():
@@ -15,20 +19,22 @@ def transcribe():
     tmp_filepath = None
     
     try:
-        # Récupère metadata (facultatif)
+        # Récupère metadata (facultatif) depuis form ou json
         metadata = request.form.get('metadata')
+        if not metadata and request.is_json:
+            metadata = request.json.get('metadata')
         
         # 1. Si fichier binaire fourni
         if 'file' in request.files:
             file = request.files['file']
-            # On utilise delete=False car on veut fermer le fichier avant de le passer à whisper
-            with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(file.filename)[1]) as tmp:
-                file.save(tmp.name)
-                tmp_filepath = tmp.name
-                logger.info(f"Fichier reçu et sauvegardé temporairement : {tmp_filepath}")
+            # On utilise mkstemp pour éviter PermissionError sous Windows
+            fd, tmp_filepath = tempfile.mkstemp(suffix=os.path.splitext(file.filename)[1])
+            os.close(fd) # Important: fermer le descripteur
+            file.save(tmp_filepath)
+            logger.info(f"Fichier reçu et sauvegardé temporairement : {tmp_filepath}")
 
         # 2. Si URL fournie
-        elif request.json and 'media_url' in request.json:
+        elif request.is_json and 'media_url' in request.json:
             url = request.json['media_url']
             logger.info(f"Téléchargement depuis l'URL : {url}")
             resp = requests.get(url, stream=True)
@@ -50,7 +56,8 @@ def transcribe():
 
         # Transcription
         logger.info("Démarrage de la transcription...")
-        transcription = transcribe_audio_file(tmp_filepath)
+        with transcription_lock:
+            transcription = transcribe_audio_file(tmp_filepath)
         logger.info("Transcription terminée avec succès.")
 
         # Reponse simple, tu peux renvoyer metadata aussi
