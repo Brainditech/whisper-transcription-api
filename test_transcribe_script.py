@@ -4,7 +4,7 @@ import os
 # Configuration
 url = "http://127.0.0.1:8000/transcribe"
 # Utilisation du fichier test.mp4 déjà présent dans le dossier
-file_path = "test.mp4" 
+file_path = "Dupersoncerveai.mp4" 
 
 if not os.path.exists(file_path):
     print(f"Erreur: Le fichier de test {file_path} n'existe pas.")

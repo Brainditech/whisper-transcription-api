@@ -4,9 +4,4 @@ huggingface_hub>=0.20.0
 filelock>=3.13.1
 torch
 requests
-markdown2
-google-api-python-client
-google-auth
-google-auth-oauthlib
-mistune
 waitress
