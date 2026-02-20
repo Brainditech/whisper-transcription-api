@@ -1,5 +1,7 @@
 Flask
 faster-whisper
+huggingface_hub>=0.20.0
+filelock>=3.13.1
 torch
 requests
 markdown2

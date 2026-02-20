@@ -1,8 +1,11 @@
-FROM pytorch/pytorch:2.1.0-cuda11.8-cudnn8-runtime
+FROM nvidia/cuda:12.1.0-cudnn8-runtime-ubuntu22.04
 
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y ffmpeg git && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y ffmpeg git python3 python3-pip && rm -rf /var/lib/apt/lists/*
+
+# Rediriger dynamiquement `python` et `pip` vers python3
+RUN ln -sf /usr/bin/python3 /usr/bin/python && ln -sf /usr/bin/pip3 /usr/bin/pip
 
 WORKDIR /app
 
@@ -10,14 +13,13 @@ WORKDIR /app
 COPY requirements.txt .
 
 RUN pip install --upgrade pip \
- && pip install -r requirements.txt
+    && pip install -r requirements.txt
 
-# 🚀 Ajouter ici : download modèle une bonne fois pour toutes
-RUN python -c "import whisper; whisper.load_model('large-v2')"
+
 
 # Copier tout le reste du code
 COPY . .
 
 EXPOSE 8000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "1200", "app:app"]
+CMD ["python", "app.py"]

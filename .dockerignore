@@ -1,0 +1,6 @@
+venv/
+.git/
+__pycache__/
+*.mp4
+*.mp3
+.gemini/
