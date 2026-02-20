@@ -4,3 +4,8 @@ __pycache__/
 *.mp3
 *.mp4
 service_account.json
+# Test files and logs
+test.py
+test_*.py
+*.log
+build_log.txt

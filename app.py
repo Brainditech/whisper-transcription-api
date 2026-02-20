@@ -5,6 +5,9 @@ def create_app():
     app = Flask(__name__)
     # Set maximum upload size (e.g., 500 MB)
     app.config['MAX_CONTENT_LENGTH'] = 500 * 1024 * 1024
+    # Afficher les accents corrects dans le terminal lors des requêtes (JSON UTF-8)
+    app.json.ensure_ascii = False
+    
     app.register_blueprint(transcribe_bp)
     return app
 
