@@ -105,6 +105,30 @@ curl -X POST http://localhost:8000/transcribe \
 
 ---
 
+## 🤖 Bonus: n8n Automation Workflow
+
+An automated workflow for n8n is included in this repository to demonstrate a complete pipeline: **Downloading a TikTok video without third-party APIs and transcribing it automatically.**
+
+### Included Workflow
+- **File:** `n8n_workflows/TiktokTranscriptor.json`
+
+### How it Works
+1. **Trigger:** Accepts a TikTok URL via a web form.
+2. **Scraping:** Fetches the page HTML and extracts the temporary session cookies and the concealed direct video URL (`playAddr`) from the TikTok JSON payload.
+3. **Download:** Downloads the `.mp4` video directly to memory (binary data block) spoofing browser headers to bypass protections.
+4. **Transcription:** Posts the binary file directly to this `faster-whisper` API payload endpoint (`/transcribe`).
+5. **Output:** Returns a clean JSON format with the transcribed text.
+
+### How to use it in n8n
+1. Open your n8n workspace.
+2. Go to **Workflows** -> **Add Workflow**.
+3. Click the options menu (three dots) in the top right corner and select **Import from File**.
+4. Select the `TiktokTranscriptor.json` file.
+5. Make sure the HTTP Node `WhisperTranscribe` points to your correct Whisper API URL (e.g., `http://host.docker.internal:8000/transcribe` if n8n is in Docker on the same machine).
+6. Click **Execute Workflow** or activate it to test with a TikTok URL!
+
+---
+
 ## 🏗️ Project Structure
 ```text
 whisper-transcription-api/

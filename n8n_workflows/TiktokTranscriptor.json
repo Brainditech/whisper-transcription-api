@@ -1,0 +1,163 @@
+{
+  "name": "TiktokTranscriptor",
+  "nodes": [
+    {
+      "id": "trigger-001",
+      "name": "URLInput",
+      "parameters": {
+        "formDescription": "Colle l'URL d'une vidéo TikTok pour la transcrire automatiquement.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "URL Tiktok"
+            }
+          ]
+        },
+        "formTitle": "TIKTOK TRANSCRIPTOR",
+        "options": {}
+      },
+      "position": [-600, 0],
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2
+    },
+    {
+      "id": "metadata-001",
+      "name": "FetchPageHTML",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/91.0.4472.124"
+            }
+          ]
+        },
+        "options": {
+          "response": {
+            "response": {
+              "fullResponse": true,
+              "responseFormat": "text"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "url": "={{ $json['URL Tiktok'] }}"
+      },
+      "position": [-360, 0],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "id": "code-001",
+      "name": "ExtractVideoUrl",
+      "parameters": {
+        "jsCode": "const html = $input.first().json.data;\nconst headers = $input.first().json.headers || {};\nconst cookies = headers['set-cookie'] || [];\n\nif (!html) {\n  throw new Error(\"HTML body is undefined. Check the previous node's output.\");\n}\nconst regex = /<script id=\"__UNIVERSAL_DATA_FOR_REHYDRATION__\" type=\"application\\/json\">([\\s\\S]*?)<\\/script>/;\nconst match = html.match(regex);\n\nif (match) {\n  const jsonStr = match[1];\n  const data = JSON.parse(jsonStr);\n  const videoUrl = data?.__DEFAULT_SCOPE__?.[\"webapp.video-detail\"]?.itemInfo?.itemStruct?.video?.playAddr;\n  if (!videoUrl) {\n    throw new Error(\"Could not find video URL in the JSON data.\");\n  }\n  return [{ json: { videoUrl, cookies: cookies.join('; ') } }];\n} else {\n  throw new Error(\"Could not find __UNIVERSAL_DATA_FOR_REHYDRATION__ script in the HTML.\");\n}"
+      },
+      "position": [-120, 0],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    },
+    {
+      "id": "download-001",
+      "name": "DownloadVideo",
+      "parameters": {
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "User-Agent",
+              "value": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
+            },
+            {
+              "name": "Referer",
+              "value": "https://www.tiktok.com/"
+            },
+            {
+              "name": "Accept",
+              "value": "video/mp4,video/webm,video/*;q=0.9,application/octet-stream;q=0.8"
+            },
+            {
+              "name": "Accept-Language",
+              "value": "en-US,en;q=0.5"
+            },
+            {
+              "name": "Connection",
+              "value": "keep-alive"
+            },
+            {
+              "name": "Cookie",
+              "value": "={{ $json.cookies }}"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true,
+          "response": {
+            "response": {
+              "responseFormat": "file"
+            }
+          }
+        },
+        "sendHeaders": true,
+        "url": "={{ $json.videoUrl }}"
+      },
+      "position": [120, 0],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "id": "whisper-001",
+      "name": "WhisperTranscribe",
+      "parameters": {
+        "bodyParameters": {
+          "parameters": [
+            {
+              "inputDataFieldName": "data",
+              "name": "file",
+              "parameterType": "formBinaryData"
+            }
+          ]
+        },
+        "contentType": "multipart-form-data",
+        "method": "POST",
+        "options": {
+          "timeout": 300000
+        },
+        "sendBody": true,
+        "url": "http://host.docker.internal:8000/transcribe"
+      },
+      "position": [360, 0],
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2
+    },
+    {
+      "id": "result-001",
+      "name": "FormatResult",
+      "parameters": {
+        "jsCode": "const transcription = $input.first().json.transcription || 'No transcription returned';\nconst metadata = $input.first().json.metadata || null;\n\nreturn [{\n  json: {\n    transcription,\n    metadata,\n    source: 'TiktokTranscriptor'\n  }\n}];"
+      },
+      "position": [600, 0],
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2
+    }
+  ],
+  "connections": {
+    "DownloadVideo": {
+      "main": [[{"index": 0, "node": "WhisperTranscribe", "type": "main"}]]
+    },
+    "ExtractVideoUrl": {
+      "main": [[{"index": 0, "node": "DownloadVideo", "type": "main"}]]
+    },
+    "FetchPageHTML": {
+      "main": [[{"index": 0, "node": "ExtractVideoUrl", "type": "main"}]]
+    },
+    "URLInput": {
+      "main": [[{"index": 0, "node": "FetchPageHTML", "type": "main"}]]
+    },
+    "WhisperTranscribe": {
+      "main": [[{"index": 0, "node": "FormatResult", "type": "main"}]]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}
