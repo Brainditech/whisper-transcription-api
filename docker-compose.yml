@@ -1,0 +1,32 @@
+services:
+  whisper-api:
+    build: .
+    image: whisper-transcription-api:latest
+    container_name: whisper-api
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      WHISPER_MODEL: large-v3
+      WHISPER_DEVICE: auto
+      WHISPER_COMPUTE_TYPE: auto
+      WHISPER_PRELOAD: "1"
+      WHISPER_ASYNC_WORKERS: "1"
+      MAX_UPLOAD_MB: "2048"
+      WHISPER_MAX_DOWNLOAD_SIZE_MB: "2048"
+      WHISPER_DOWNLOAD_TIMEOUT: "600"
+      WAITRESS_THREADS: "4"
+      WAITRESS_CHANNEL_TIMEOUT: "3600"
+      LOG_LEVEL: INFO
+    volumes:
+      - whisper-models:/models
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  whisper-models:
